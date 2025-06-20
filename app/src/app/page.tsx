@@ -98,7 +98,8 @@ export default function Home() {
       </div>
       <button className="bg-rose-400 h-12 w-1/4 mt-5 rounded-full cursor-pointer"
         onClick={() => {
-          let solved = solveHiddenSingles(solveSingles(grid));
+          let solved = solveSingles(grid);
+          solved = solveHiddenSingles(solved);
 
           setGrid(solved);
           setNeedsolution(true);

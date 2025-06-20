@@ -79,15 +79,14 @@ export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
             const candidateMap: Map<number, [number, number][]> = new Map();
 
             for (let c = 0; c < SIZE; c++) {
-                if (updatedGrid[r][c] !== 0) continue;
+                if (updatedGrid[r][c] >= 1 && updatedGrid[r][c] <= 9) continue;
                 const candidates = getCandidates(updatedGrid, r, c); // finds all possible values for the cell
 
                 for (const value of candidates) { //iterates over each valid number in candidate
                     // Initialize value (1-9) if it does not exist as a key in the map, with the value of empty array []
                     if (!candidateMap.has(value)) { candidateMap.set(value, []); }
-
+                    candidateMap.get(value)?.push([r, c]);
                     // If value exists, push cell coords to the array
-                    else { candidateMap.get(value)?.push([r, c]); }
                 }
             }
 
@@ -106,13 +105,13 @@ export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
             const candidateMap: Map<number, [number, number][]> = new Map();
 
             for (let r = 0; r < SIZE; r++) {
-                if (updatedGrid[r][c] !== 0) continue;
+                if (updatedGrid[r][c] >= 1 && updatedGrid[r][c] <= 9) continue;
 
                 const candidates = getCandidates(updatedGrid, r, c);
 
                 for (const value of candidates) {
                     if (!candidateMap.has(value)) { candidateMap.set(value, []); }
-                    else { candidateMap.get(value)?.push([r, c]); }
+                    candidateMap.get(value)?.push([r, c]);
                 }
             }
             for (const [value, cells] of candidateMap) {
@@ -139,24 +138,22 @@ export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
                         const candidates = getCandidates(updatedGrid, r, c);
 
                         for (const value of candidates) {
-                            if (!candidateMap.has(value)) {
-                                candidateMap.set(value, []);
-                            } else {
-                                candidateMap.get(value)?.push([r, c]);
-                            }
+                            if (!candidateMap.has(value)) candidateMap.set(value, []);
+                            candidateMap.get(value)?.push([r, c]);
                         }
                     }
+                }
 
-                    for (const [value, cells] of candidateMap) {
-                        if (cells.length === 1) {
-                            const [row, col] = cells[0];
-                            updatedGrid[row][col] = value;
-                            changed = true;
-                        }
+                for (const [value, cells] of candidateMap) {
+                    if (cells.length === 1) {
+                        const [row, col] = cells[0];
+                        updatedGrid[row][col] = value;
+                        changed = true;
                     }
                 }
             }
         }
+
     }
     console.log("No more possible hidden singles at this point!");
     return updatedGrid;

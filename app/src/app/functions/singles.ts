@@ -2,6 +2,80 @@ export const SIZE = 9;
 export const BLOCK = 3;
 export type SudokuGrid = number[][];
 
+type SolveResult = {
+    grid: SudokuGrid;
+    systemMessage?: string;
+}
+// function with validator to check for puzzle validity (no duplicate values in row, col and grid)
+// if valid, runs solving logic in sequential order
+// optional setMessage? (avoids error in case not passed in)
+
+export function masterSolve(grid: SudokuGrid, setMessage?: (systemMessage: string) => void): SolveResult {
+    let updatedGrid = grid.map(r => [...r]);
+
+    let isValid = validator(updatedGrid);
+    if (!isValid) {
+        console.log("Puzzle is invalid!");
+
+        return {
+            grid: updatedGrid,
+            systemMessage: "Puzzle is invalid! Duplicate value found!"
+        };
+
+    } else {
+        // running naked singles logic
+        updatedGrid = solveSingles(updatedGrid);
+
+        if (checkResult(updatedGrid)) {
+            console.log("Solved through naked singles!");
+            return {
+                grid: updatedGrid,
+                systemMessage: "Solved through naked singles only!"
+            };
+        } else {
+            console.log("All singles found, moving on to next method...hidden singles")
+            console.table(updatedGrid);
+        }
+
+        // running hidden singles logic
+        updatedGrid = solveHiddenSingles(updatedGrid);
+
+        if (checkResult(updatedGrid)) {
+            console.log("Solved through naked singles and hidden singles!")
+            return {
+                grid: updatedGrid,
+                systemMessage: "Solved through naked singles and hidden singles!"
+            };
+        } else {
+            console.log("All hidden and naked singles found, moving on to next method...backtracking")
+            console.table(updatedGrid);
+        }
+
+        // running backtracking logic
+        const result = backTrack(updatedGrid);
+        if (result) {
+            updatedGrid = result;
+        } else {
+            console.log("No viable solutions found.")
+        }
+
+        if (checkResult(updatedGrid)) {
+            console.log("Solved through naked singles, hidden singles and backtracking!")
+            return {
+                grid: updatedGrid,
+                systemMessage: "Solved through naked singles, hidden singles and backtracking!"
+            };
+        } else {
+            console.log("Invalid Puzzle")
+            console.table(updatedGrid);
+        }
+        return {
+            grid: updatedGrid,
+            systemMessage: "Invalid puzzle provided, no solutions found."
+        };
+    }
+}
+
 // locates next empty cell, returns [r, c] or void (console.log message)
 export function findEmpty(grid: SudokuGrid): [number, number] | void {
     for (let r = 0; r < SIZE; r++) {
@@ -12,7 +86,7 @@ export function findEmpty(grid: SudokuGrid): [number, number] | void {
     return (console.log('No empty spaces avaliable!'));
 }
 
-
+// deducts from rows, columns and grids to produce avaliable numbers for the cell 
 export function getCandidates(grid: SudokuGrid, r: number, c: number): number[] {
     // holds values already used, Set automatically ignores duplicates
     const used = new Set<number>();
@@ -63,9 +137,14 @@ export function solveSingles(grid: SudokuGrid): SudokuGrid {
     return updatedGrid;
 }
 
-
+// logs the location of values in Map<value, [r, c][]>, when a value only corresponds to one set of [r,c], log as correct answer
 export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
     const updatedGrid = grid.map(r => [...r]);
+
+    // if no empty cells exist, puzzle is already solved.
+    const empty = findEmpty(updatedGrid);
+    if (!empty) return updatedGrid;
+
     let changed = true;
 
     // keep loop going as long as something was filled in the previous pass
@@ -75,7 +154,6 @@ export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
         // checks rows for when a value (1-9) only have one cell associated [r,c], updates grid[][] with value
         for (let r = 0; r < SIZE; r++) {
 
-            //stores Map<number candidate(1-9), [row, col]>
             const candidateMap: Map<number, [number, number][]> = new Map();
 
             for (let c = 0; c < SIZE; c++) {
@@ -159,6 +237,86 @@ export function solveHiddenSingles(grid: SudokuGrid): SudokuGrid {
     return updatedGrid;
 }
 
-// export function solveDoubles(grid: SudokuGrid): SudokuGrid {
-//     const updatedGrid = grid.map(r => [...r]);
-// }
+export function backTrack(grid: SudokuGrid): SudokuGrid | null {
+    const updatedGrid = grid.map(row => [...row]); // deep copy to avoid mutating original
+
+    // if there's no empty cell then puzzle is solved
+    const empty = findEmpty(updatedGrid); // returns [row, col]
+    if (!empty) return updatedGrid;
+
+    const [row, col] = empty;
+    const candidates = getCandidates(updatedGrid, row, col);
+
+    for (const value of candidates) {
+        updatedGrid[row][col] = value;
+
+        const result = backTrack(updatedGrid);
+        if (result) return result; // success, return solved grid
+
+        updatedGrid[row][col] = 0; // backtrack if this path failed
+    }
+
+    return null; // no valid solution from this branch
+}
+
+
+function checkResult(grid: SudokuGrid): boolean {
+    for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+            const val = grid[r][c];
+
+            // If any cell is not a number and not a value from 1-9, fail
+            if (typeof val !== "number" || val < 1 || val > 9) {
+                return false;
+            }
+        }
+    }
+    console.log("Puzzle Solved!");
+    return true;
+}
+
+function validator(grid: SudokuGrid): boolean {
+    for (let r = 0; r < SIZE; r++) {
+        const rowSeen = new Set<number>();
+        const colSeen = new Set<number>();
+        const boxSeen = new Set<number>();
+
+        for (let c = 0; c < SIZE; c++) {
+            // logs every col for every row checked
+            const rowVal = grid[r][c];
+            if (rowVal !== 0) {             //ignoring 0 as our grid is populated with them
+                if (rowSeen.has(rowVal)) {  // duplicates found if val has already appeared
+                    console.log(`Row ${r + 1}, Column ${c + 1} has a conflicting value!`)
+                    return false;
+                }
+                console.log("Rows are validated!")
+                rowSeen.add(rowVal);
+            }
+
+            //reverse to log row for every col checked
+            const colVal = grid[c][r];
+            if (colVal !== 0) {
+                if (colSeen.has(colVal)) {
+                    console.log(`Row ${c + 1}, Column ${r + 1} has a conflicting value!`)
+                    return false;
+                }
+                console.log("Columns are validated!")
+                colSeen.add(colVal);
+            }
+
+            const boxRow = Math.floor(r / BLOCK) * BLOCK + Math.floor(c / BLOCK);
+            const boxCol = (r % BLOCK) * BLOCK + (c % BLOCK);
+            const boxVal = grid[boxRow][boxCol];
+
+            if (boxVal !== 0) {
+                if (boxSeen.has(boxVal)) {
+                    console.log(`Row ${r}, Column ${c} has a conflicting value!`)
+                    return false;
+                }
+                console.log("Grids are validated!")
+                boxSeen.add(boxVal);
+            }
+        }
+    }
+    return true;
+}

@@ -1,11 +1,12 @@
 "use client"
 import React, { useState } from "react";
-import { getCandidates, solveHiddenSingles, solveSingles } from "./functions/singles";
+import { getCandidates, masterSolve, } from "./functions/singles";
 
 const SIZE: number = 9;
 const BLOCK = 3;
 type SudokuGrid = number[][];
 
+// extreme sample
 const sudokuGrid: number[][] = [
   [0, 7, 0, 0, 0, 1, 9, 0, 0],
   [5, 0, 0, 8, 0, 0, 0, 0, 3],
@@ -18,6 +19,7 @@ const sudokuGrid: number[][] = [
   [4, 0, 0, 0, 6, 0, 0, 0, 0],
 ];
 
+// master sample
 const sudokuGrid2: number[][] = [
   [0, 9, 0, 7, 0, 1, 0, 0, 0],
   [0, 0, 0, 4, 0, 0, 0, 0, 0],
@@ -29,6 +31,9 @@ const sudokuGrid2: number[][] = [
   [0, 0, 4, 0, 5, 0, 0, 0, 2],
   [0, 2, 9, 0, 0, 0, 0, 5, 8],
 ];
+
+let sampleSolution: number[][] = sudokuGrid;
+
 // creates empty list with SIZE slots and fills all spots with 0
 // for each slot in the list, make a new list of SIZE number of 0
 const initialGrid: SudokuGrid = new Array(SIZE).fill(0).map(() => //initially .fill(0) just to give .map() something to loop over
@@ -48,9 +53,23 @@ export default function Home() {
   );
 
   const handleNumInput = (row: number, col: number, value: string) => {
+
+    // if users hit backspace/del, update value to 0
+    if (value === "") {
+      const newGrid = grid.map((r) => [...r]);
+      newGrid[row][col] = 0;
+
+      const newUserInput = userInput.map((r) => [...r]);
+      newUserInput[row][col] = false;
+
+      setGrid(newGrid);
+      setUserInput(newUserInput);
+      return;
+    }
+
     //converts string into integer
     const num = parseInt(value);
-    if (isNaN(num) || num < 0 || num > 9) return (setMessage("Invalid input!"));
+    if (isNaN(num) || num <= 1 || num > 9) return (setMessage("Invalid input!"));
 
     //makes copy so the original is not mutated
     const newGrid = grid.map((r) => [...r]);
@@ -61,10 +80,6 @@ export default function Home() {
 
     setGrid(newGrid);
     setUserInput(newUserInput);
-
-    console.clear();
-    console.log("Updated puzzle:");
-    console.table(newGrid);
   }
 
   return (
@@ -98,26 +113,18 @@ export default function Home() {
       </div>
       <button className="bg-rose-400 h-12 w-1/4 mt-5 rounded-full cursor-pointer"
         onClick={() => {
-          let solved = solveSingles(grid);
-          solved = solveHiddenSingles(solved);
-
-          setGrid(solved);
+          let solved = masterSolve(grid, setMessage);
+          setGrid(solved.grid);
+          if (solved.systemMessage) { setMessage(solved.systemMessage); }
           setNeedsolution(true);
-
-          const isSolved = solved.every(row => row.every(cell => cell !== 0));
-          if (isSolved) {
-            setMessage("Puzzle solved!");
-          } else {
-            setMessage("No more possible singles at this point!");
-          }
         }}>
         SOLVE
       </button>
       <button className="bg-green-400 h-12 w-1/4 mt-5 rounded-full cursor-pointer"
         onClick={() => {
-          setGrid(sudokuGrid2)
+          setGrid(sampleSolution);
           setUserInput(
-            sudokuGrid2.map(row => row.map(cell => cell !== 0))
+            sampleSolution.map(row => row.map(cell => cell !== 0))
           );
         }}>ADD</button>
     </div>

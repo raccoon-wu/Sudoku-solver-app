@@ -2,6 +2,7 @@ export const SIZE = 9;
 export const BLOCK = 3;
 export type SudokuGrid = number[][];
 
+//custom type to pass grid + new UI message to main
 type SolveResult = {
     grid: SudokuGrid;
     systemMessage?: string;

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from "react";
-import { getCandidates, masterSolve, } from "./functions/singles";
+import { getCandidates, masterSolve, } from "./functions/solve";
 
 const SIZE: number = 9;
 const BLOCK = 3;
@@ -32,7 +32,7 @@ const sudokuGrid2: number[][] = [
   [0, 2, 9, 0, 0, 0, 0, 5, 8],
 ];
 
-let sampleSolution: number[][] = sudokuGrid;
+let sampleSolution: number[][] = sudokuGrid2;
 
 // creates empty list with SIZE slots and fills all spots with 0
 // for each slot in the list, make a new list of SIZE number of 0
@@ -42,7 +42,12 @@ const initialGrid: SudokuGrid = new Array(SIZE).fill(0).map(() => //initially .f
 
 export default function Home() {
   const [grid, setGrid] = useState<SudokuGrid>(initialGrid);
+
+  //guidance messages
   const [message, setMessage] = useState<String>("Fill in sudoku puzzle, then click 'SOLVE'!");
+
+  // boolean to track what is displayed in each cell after solving (possible candidates like '178')
+  // will only show if backtracking is disabled!
   const [needSolution, setNeedsolution] = useState<boolean>(false);
 
   // tracks initial numbers provided by the Sudoku puzzle
@@ -52,6 +57,8 @@ export default function Home() {
     )
   );
 
+  // limits input to only numbers from 1 number 1-9
+  // delete function - backspace/del to reset the cell value to 0
   const handleNumInput = (row: number, col: number, value: string) => {
 
     // if users hit backspace/del, update value to 0
@@ -69,7 +76,7 @@ export default function Home() {
 
     //converts string into integer
     const num = parseInt(value);
-    if (isNaN(num) || num <= 1 || num > 9) return (setMessage("Invalid input!"));
+    if (isNaN(num) || num < 1 || num > 9) return (setMessage("Invalid input!"));
 
     //makes copy so the original is not mutated
     const newGrid = grid.map((r) => [...r]);
@@ -126,7 +133,7 @@ export default function Home() {
           setUserInput(
             sampleSolution.map(row => row.map(cell => cell !== 0))
           );
-        }}>ADD</button>
+        }}>ADD SAMPLE</button>
     </div>
   );
 }
